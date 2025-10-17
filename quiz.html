@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Take Quiz — Spidey BFF</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--pink1:#fff0f6;--pink2:#ffd6e8;--accent:#ff4fa3;--good:#fff;color:#222}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Poppins',sans-serif;min-height:100vh;background:linear-gradient(135deg,var(--pink1),var(--pink2));display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{width:100%;max-width:760px;background:white;border-radius:18px;padding:18px;box-shadow:0 14px 30px rgba(0,0,0,0.14);position:relative}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  header h1{margin:0;font-size:20px}
+  .progress{font-size:13px;color:#666;margin-bottom:10px}
+  .qbox{padding:14px;border-radius:12px;border:1px solid #ffe6f3;background:linear-gradient(180deg,#fff,#fff7fb);margin-bottom:12px}
+  .opts{display:flex;gap:8px;flex-wrap:wrap}
+  .opts button{padding:10px 12px;border-radius:10px;border:2px solid transparent;background:white;cursor:pointer;font-weight:600}
+  .opts button:hover{transform:translateY(-3px)}
+  .heart{font-size:24px;margin-left:6px}
+  .feedback{margin-top:8px;font-weight:700}
+  .good{color:#c2185b}
+  .bad{color:#666}
+  .resultBox{display:none;padding:18px;border-radius:12px;text-align:center}
+  .finalScore{font-size:22px;font-weight:700}
+  .bigMsg{font-size:28px;margin-top:10px}
+  .btn{padding:10px 14px;border-radius:10px;background:var(--accent);color:white;border:0;cursor:pointer;font-weight:700}
+  .spiderSticker{position:absolute;right:12px;top:12px;opacity:0.9}
+  .cuteHearts{position:absolute;left:-60px;bottom:-60px;font-size:110px;opacity:0.08;pointer-events:none}
+  footer{margin-top:12px;font-size:13px;color:#666;text-align:center}
+  @media (max-width:720px){.spiderSticker{display:none}}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="cuteHearts">💖💞</div>
+    <div class="spiderSticker" aria-hidden="true">
+      <!-- small sticker -->
+      <svg width="72" height="72" viewbox="0 0 64 64">
+        <circle cx="32" cy="32" r="32" fill="#ff4fa3"></circle>
+        <text x="32" y="40" font-family="Poppins" font-weight="700" font-size="18" text-anchor="middle" fill="#fff">SP</text>
+      </svg>
+    </div>
+
+    <header>
+      <h1>🕷️ Spidey Friend Compatibility</h1>
+      <div style="margin-left:auto" id="authorTag"></div>
+    </header>
+
+    <div id="mainArea">
+      <div class="progress" id="progress">Question 1 of 10</div>
+
+      <div id="questionArea"></div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-top:12px">
+        <button class="btn" id="nextBtn" style="display:none">Next ➜</button>
+        <button class="btn" id="restartBtn" style="display:none;background:#aaa">Restart</button>
+        <div style="flex:1"></div>
+      </div>
+    </div>
+
+    <div class="resultBox" id="resultBox">
+      <div class="finalScore" id="scoreText"></div>
+      <div class="bigMsg" id="bigMsg"></div>
+      <div style="margin-top:12px">
+        <button class="btn" id="retake">Retake</button>
+      </div>
+      <footer>Share the fun on WhatsApp or Instagram! ❤️🕷️</footer>
+    </div>
+  </div>
+
+<script>
+/* Questions (same as create.html) */
+const QUESTIONS = [
+  {q:"1) Favourite snack?", a:"Chips 🍟", b:"Chocolate 🍫"},
+  {q:"2) Coffee or Tea?", a:"Coffee ☕", b:"Tea 🍵"},
+  {q:"3) Movies or Music?", a:"Movies 🎬", b:"Music 🎵"},
+  {q:"4) Summer or Winter?", a:"Summer ☀️", b:"Winter ❄️"},
+  {q:"5) Morning or Night person?", a:"Morning 🌅", b:"Night 🌙"},
+  {q:"6) Pizza or Burger?", a:"Pizza 🍕", b:"Burger 🍔"},
+  {q:"7) Cat or Dog?", a:"Cat 🐱", b:"Dog 🐶"},
+  {q:"8) Read book or Watch show?", a:"Read 📚", b:"Watch 📺"},
+  {q:"9) Beach or Mountains?", a:"Beach 🌊", b:"Mountains 🏔️"},
+  {q:"10) Spidey: hero or prankster?", a:"Hero 🕷️", b:"Prankster 😜"}
+];
+
+let authorData = null; // will hold {author:'Name', answers:{...}}
+/* Attempt to load: first from URL param data=, otherwise from localStorage */
+(function loadAuthor(){
+  try {
+    const url = new URL(location.href);
+    const dataParam = url.searchParams.get('data');
+    if (dataParam) {
+      // decode base64
+      const json = decodeURIComponent(escape(atob(dataParam)));
+      authorData = JSON.parse(json);
+    } else {
+      const saved = localStorage.getItem('spidey_author');
+      if (saved) authorData = JSON.parse(saved);
+    }
+  } catch(e){ console.warn('Author load failed', e) }
+})();
+
+/* show author name */
+document.getElementById('authorTag').textContent = authorData ? `Quiz by: ${authorData.author}` : 'Quiz by: Unknown';
+
+/* Build quiz UI */
+const qArea = document.getElementById('questionArea');
+const progress = document.getElementById('progress');
+let idx = 0;
+let friendAnswers = {};
+let matchCount = 0;
+
+function showQuestion(i){
+  qArea.innerHTML = '';
+  progress.textContent = `Question ${i+1} of ${QUESTIONS.length}`;
+  const Q = QUESTIONS[i];
+  const div = document.createElement('div'); div.className='qbox';
+  div.innerHTML = `<div style="font-weight:700;margin-bottom:8px">${Q.q}</div>
+    <div class="opts">
+      <button data-val="A">${Q.a}</button>
+      <button data-val="B">${Q.b}</button>
+    </div>
+    <div class="feedback" id="feedback${i}"></div>`;
+  qArea.appendChild(div);
+
+  div.querySelectorAll('.opts button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      // disable buttons after answer
+      div.querySelectorAll('.opts button').forEach(b=>b.disabled=true);
+      btn.style.boxShadow = '0 6px 16px rgba(0,0,0,0.12)';
+      const val = btn.getAttribute('data-val');
+      friendAnswers[i] = val;
+      // compare with author if available
+      let match = false;
+      if (authorData && authorData.answers && typeof authorData.answers[i] !== 'undefined') {
+        match = (authorData.answers[i] === val);
+      }
+      const fb = document.getElementById('feedback'+i);
+      if (match) {
+        fb.innerHTML = `<span class="good">Luv you 🤍💞</span>`;
+        matchCount++;
+      } else {
+        fb.innerHTML = `<span class="bad">Better luck 😜💔</span>`;
+      }
+      // show next button or finish
+      document.getElementById('nextBtn').style.display = (i < QUESTIONS.length-1) ? 'inline-block':'inline-block';
+      document.getElementById('nextBtn').onclick = ()=> {
+        idx++;
+        document.getElementById('nextBtn').style.display='none';
+        if (idx < QUESTIONS.length) showQuestion(idx); else finishQuiz();
+      };
+    });
+  });
+}
+
+/* If author is not found, alert user but allow them to take quiz (no matching) */
+if (!authorData) {
+  const note = document.createElement('div'); note.className='small'; note.style.color='#b02b5b';
+  note.textContent = 'Author data not found locally or in link. Matching will not work until you use a create.html and generate a share link.';
+  document.getElementById('mainArea').insertBefore(note, document.getElementById('mainArea').firstChild);
+}
+
+/* start */
+showQuestion(idx);
+
+/* finish flow */
+function finishQuiz(){
+  document.getElementById('mainArea').style.display='none';
+  const box = document.getElementById('resultBox');
+  box.style.display='block';
+  document.getElementById('scoreText').textContent = `${matchCount} / ${QUESTIONS.length} matches!`;
+  // Big final message: always show the special line
+  document.getElementById('bigMsg').innerHTML = `<div style="font-weight:800;color:#ff2b85">I hate you Spidey 💖🕷️</div>`;
+  // small per score message
+  if (matchCount >= 8) {
+    document.getElementById('bigMsg').innerHTML += `<div style="margin-top:8px;color:#2b2b2b">You two are super close! 💞</div>`;
+  } else if (matchCount >= 4) {
+    document.getElementById('bigMsg').innerHTML += `<div style="margin-top:8px;color:#2b2b2b">Not bad! Try sharing and see what friends get 😉</div>`;
+  } else {
+    document.getElementById('bigMsg').innerHTML += `<div style="margin-top:8px;color:#2b2b2b">Hey, more reasons to hang out and know each other 😅</div>`;
+  }
+}
+
+/* retake and restart behaviour */
+document.getElementById('retake').addEventListener('click', ()=> {
+  // reset
+  idx = 0; matchCount = 0; friendAnswers = {};
+  document.getElementById('resultBox').style.display='none';
+  document.getElementById('mainArea').style.display='block';
+  showQuestion(idx);
+});
+</script>
+</body>
+</html>

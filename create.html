@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Create — Spidey BFF Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--pink1:#ffd6e8;--pink2:#ff9ccf;--accent:#ff4fa3}
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:'Poppins',sans-serif;
+    min-height:100vh;
+    background:linear-gradient(135deg,var(--pink1),var(--pink2));
+    display:flex;align-items:center;justify-content:center;padding:30px;
+  }
+  .card{
+    width:100%;max-width:780px;background:white;border-radius:18px;padding:22px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.12);position:relative;overflow:hidden;
+  }
+  header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+  header h1{margin:0;font-size:20px;color:#2b2b2b}
+  .spidey {width:56px;height:56px;flex-shrink:0}
+  .subtitle{color:#555;margin-top:6px;font-size:14px}
+  .questions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  .q{
+    border-radius:12px;padding:12px;border:1px dashed #ffd7ea;background:linear-gradient(180deg,#fff,#fff7fb);
+  }
+  .q h4{margin:0 0 8px;font-size:14px}
+  .opts{display:flex;gap:8px;flex-wrap:wrap}
+  .opts button{
+    border:2px solid transparent;padding:8px 10px;border-radius:10px;cursor:pointer;background:#fff;
+    box-shadow:0 6px 12px rgba(255,77,150,0.06);font-weight:600;
+  }
+  .opts button.selected{background:var(--accent);color:white;border-color:rgba(0,0,0,0.06)}
+  .actions{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap}
+  .btn{padding:10px 14px;border-radius:10px;cursor:pointer;border:0;font-weight:600}
+  .save{background:#ff4fa3;color:white}
+  .gen{background:#ffd6e8;color:#2b2b2b}
+  .small{font-size:13px;color:#666}
+  .linkBox{margin-top:12px;padding:12px;border-radius:8px;background:#fff6fb;border:1px solid #ffe6f3;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .copyBtn{padding:8px 10px;border-radius:8px;background:var(--accent);color:white;border:0;cursor:pointer}
+  .hearts{position:absolute;right:-60px;top:-40px;transform:rotate(15deg);opacity:0.14;font-size:160px;pointer-events:none}
+  footer{margin-top:14px;color:#444;font-size:13px;text-align:center}
+  @media (max-width:720px){.questions{grid-template-columns:1fr}.spidey{display:none}}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="hearts">💖💞</div>
+    <header>
+      <!-- Simple Spider-Man sticker (SVG) -->
+      <div class="spidey" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="100%" height="100%">
+          <circle cx="32" cy="32" r="32" fill="#ff4fa3"/>
+          <path d="M22 22c2 4 10 8 10 8s8-4 10-8c-6-6-14-6-20 0z" fill="#fff" opacity="0.15"/>
+          <text x="32" y="40" fill="#fff" font-size="18" font-weight="700" text-anchor="middle" font-family="Poppins">SP</text>
+        </svg>
+      </div>
+      <div>
+        <h1>💞 Create: Spidey Friend Quiz</h1>
+        <div class="subtitle">Pick your answers — generate the share link for friends</div>
+      </div>
+    </header>
+
+    <div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label class="small">Your display name:</label>
+        <input id="authorName" placeholder="e.g., Rakshayaa" style="padding:8px;border-radius:8px;border:1px solid #e6cfe0;font-weight:600" />
+      </div>
+
+      <div class="questions" id="questions"></div>
+
+      <div class="actions">
+        <button class="btn save" id="saveBtn">💾 Save My Answers</button>
+        <button class="btn gen" id="genBtn">🔗 Generate Share Link</button>
+        <div class="small">Tip: You can generate a short link (works after hosting). For local testing use "Copy data" and send the link or share the file.</div>
+      </div>
+
+      <div id="linkArea" style="display:none" class="linkBox">
+        <input id="shareLink" style="flex:1;padding:8px;border-radius:6px;border:1px solid #ffdced" readonly />
+        <button class="copyBtn" id="copyBtn">Copy</button>
+      </div>
+
+      <div id="localNote" style="margin-top:10px" class="small">Saved in your browser for local testing (localStorage). If you host the files, generated links will work directly.</div>
+
+      <footer>Made with ❤️ and a bit of Spidey-magic 🕷️</footer>
+    </div>
+  </div>
+
+<script>
+/* QUESTIONS (10) -- Two options each. You can edit text here if you want. */
+const QUESTIONS = [
+  {q:"1) Favourite snack?", a:"Chips 🍟", b:"Chocolate 🍫"},
+  {q:"2) Coffee or Tea?", a:"Coffee ☕", b:"Tea 🍵"},
+  {q:"3) Movies or Music?", a:"Movies 🎬", b:"Music 🎵"},
+  {q:"4) Summer or Winter?", a:"Summer ☀️", b:"Winter ❄️"},
+  {q:"5) Morning or Night person?", a:"Morning 🌅", b:"Night 🌙"},
+  {q:"6) Pizza or Burger?", a:"Pizza 🍕", b:"Burger 🍔"},
+  {q:"7) Cat or Dog?", a:"Cat 🐱", b:"Dog 🐶"},
+  {q:"8) Read book or Watch show?", a:"Read 📚", b:"Watch 📺"},
+  {q:"9) Beach or Mountains?", a:"Beach 🌊", b:"Mountains 🏔️"},
+  {q:"10) Spidey: hero or prankster?", a:"Hero 🕷️", b:"Prankster 😜"}
+];
+
+/* Build UI */
+const qWrap = document.getElementById('questions');
+QUESTIONS.forEach((Q,i)=>{
+  const el = document.createElement('div'); el.className='q';
+  el.innerHTML = `<h4>${Q.q}</h4>
+    <div class="opts">
+      <button data-q="${i}" data-val="A">${Q.a}</button>
+      <button data-q="${i}" data-val="B">${Q.b}</button>
+    </div>`;
+  qWrap.appendChild(el);
+});
+
+/* selection handling */
+document.querySelectorAll('.opts button').forEach(btn=>{
+  btn.addEventListener('click', ()=> {
+    const q = btn.getAttribute('data-q');
+    const val = btn.getAttribute('data-val');
+    // mark selected for that question
+    document.querySelectorAll(`.opts button[data-q="${q}"]`).forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    // store in temp state
+    tempAnswers[q] = val;
+  });
+});
+
+let tempAnswers = {}; // keys 0..9 => 'A' or 'B'
+
+/* Save & Generate link */
+const saveBtn = document.getElementById('saveBtn');
+const genBtn = document.getElementById('genBtn');
+const copyBtn = document.getElementById('copyBtn');
+
+saveBtn.addEventListener('click', ()=>{
+  const name = document.getElementById('authorName').value.trim() || 'Author';
+  // require all answers selected
+  if (Object.keys(tempAnswers).length !== QUESTIONS.length) {
+    alert('Please pick an option for all 10 questions before saving.');
+    return;
+  }
+  const data = { author: name, answers: tempAnswers, ts: Date.now() };
+  localStorage.setItem('spidey_author', JSON.stringify(data));
+  alert('Saved to browser (localStorage). You can now generate a share link or let friends test on this device.');
+});
+
+/* Build share link with encoded data */
+genBtn.addEventListener('click', ()=>{
+  // check saved data first
+  const stored = localStorage.getItem('spidey_author');
+  if (!stored) {
+    alert('Please Save your answers first.');
+    return;
+  }
+  // encode and make link
+  const base = location.href.replace(/create\.html.*$/,''); // base folder
+  const payload = btoa(unescape(encodeURIComponent(stored))); // base64 safe
+  // relative link to quiz page with data param
+  const link = (base.endsWith('/')? base : base + '/') + 'quiz.html?data=' + payload;
+  document.getElementById('linkArea').style.display = 'flex';
+  document.getElementById('shareLink').value = link;
+});
+
+/* copy button */
+copyBtn.addEventListener('click', ()=>{
+  const link = document.getElementById('shareLink').value;
+  navigator.clipboard?.writeText(link).then(()=> {
+    copyBtn.textContent = 'Copied ✓';
+    setTimeout(()=> copyBtn.textContent = 'Copy', 1500);
+  }).catch(()=> alert('Copy failed — select and copy manually.'));
+});
+
+/* If previously saved, pre-select choices in UI */
+(function preload(){
+  try {
+    const saved = JSON.parse(localStorage.getItem('spidey_author') || 'null');
+    if (saved && saved.answers) {
+      document.getElementById('authorName').value = saved.author || '';
+      Object.keys(saved.answers).forEach(k=>{
+        const val = saved.answers[k];
+        const btn = document.querySelector(`.opts button[data-q="${k}"][data-val="${val}"]`);
+        if (btn) { btn.classList.add('selected'); tempAnswers[k] = val; }
+      });
+    }
+  } catch(e){/* ignore */}
+})();
+</script>
+</body>
+</html>
